@@ -1,109 +1,172 @@
 # t‑Digest Streaming Quantile Estimator
 
-A high‑performance C++17 implementation of the t‑Digest algorithm for streaming quantile estimation. This project demonstrates advanced algorithmic thinking, statistical computing, multithreading, and performance optimization techniques relevant to quantitative finance, real‑time monitoring, and high‑frequency trading systems.
+A high‑performance C++17 implementation of the t‑Digest algorithm for streaming quantile estimation. Designed for real‑time data processing, this project demonstrates advanced algorithmic techniques, statistical computing, multithreading, and performance optimization suitable for quantitative finance, monitoring systems, and high‑frequency data applications.
 
 ---
 
-## 🎯 What It Does
+## Overview
 
-- **Ingests** large streams of real numbers (unbounded, streaming data).  
-- **Summarizes** into O(δ) centroids (adaptive buckets with uniform max‑weight).  
-- **Answers** any percentile (quantile) query in O(log δ) time.  
-- **Multithreaded** ingestion with batch buffering to maximize throughput.  
-- **Benchmarks** both ingestion rate and query performance, plus accuracy statistics.
+This repository provides:
 
----
+* **Static library** (`tdigest_lib`): Core t‑Digest data structure with concurrent wrapper.
+* **Executables** for data generation, ground‑truth quantile computation, streaming ingestion, and benchmarking.
+* **Build scripts** (`build.sh`, `run_all.sh`) to automate compilation and full workflow execution.
 
-## 🚀 Performance Highlights
+## Features
 
-| Metric                         | Result                |
-|--------------------------------|-----------------------|
-| **Ingestion Throughput**       | ~11–16 M points/sec   |
-| **Query Throughput**           | ~1.8 M queries/sec    |
-| **Average Query Latency**      | ~0.55 µs per query    |
-| **Centroids for 1 M points**   | ~500–600 (δ=500)      |
-| **Mean Relative Error**        | ~0.013 %              |
-| **95th‑Percentile Error**      | < 0.1 %               |
-| **99th‑Percentile Error**      | ~0.3 %                |
+* **Streaming ingestion** of unbounded real‑valued data streams.
+* **Adaptive summarization** into O(δ) centroids (max‑weight adaptive buckets).
+* **Quantile queries** answered in O(log δ) time.
+* **Multithreaded ingestion** with batch buffering for maximum throughput.
+* **Accuracy reporting** against exact quantiles (ground truth).
+* **Ingestion and query benchmarking** with performance metrics.
 
----
+## Repository Structure
 
-## 📁 Repository Structure
+```text
+├── build.sh            # Build automation script
+├── run_all.sh          # Full workflow script
+├── CMakeLists.txt      # CMake project definition
+├── include/            # Public headers
+│   ├── tdigest.h
+│   └── concurrent_tdigest.h
+└── src/                # Source files
+    ├── data_generator.cpp
+    ├── ground_truth.cpp
+    ├── benchmark.cpp
+    ├── tdigest.cpp
+    ├── concurrent_tdigest.cpp
+    └── main.cpp        # Streaming application entry point
+```
 
+## Prerequisites
 
----
+* **Compiler**: GCC 7+ or Clang 5+ (C++17 support)
+* **CMake**: version 3.10 or higher
+* **POSIX environment** (Linux, macOS)
+* **Make** or **Ninja** build system
 
-## 🛠 Prerequisites
+## Build Instructions
 
-- **Compiler**: GCC 7+ or Clang 5+ with C++17 support  
-- **CMake**: version 3.10 or higher  
-- **Linux/macOS** (any POSIX environment)  
-- **Make** (or Ninja)  
+1. Clone the repository:
 
----
+   ```bash
+   git clone https://github.com/Grimreaper00025/TDigest.git
+   cd TDigest
+   ```
+2. Make the build script executable and run it:
 
-## 🏗 Build Instructions
+   ```bash
+   chmod +x build.sh
+   ./build.sh
+   ```
 
-```bash
-    # Clone the repo:
-    git clone https://github.com/yourusername/tdigest_project.git
-    cd tdigest_project
+This produces the following executables in `build/`:
 
-    # Make the build script executable:
-    chmod +x build.sh
+* `data_generator`
+* `ground_truth`
+* `tdigest_main`
+* `benchmark`
 
-    # Build in Release mode:
-    ./build.sh
+## Usage
 
-After running `./build.sh`, you will have these executables in `build/`:
+### Full Workflow
 
-- `data_generator`  
-- `ground_truth`  
-- `tdigest_main`  
-- `benchmark`  
-
----
-
-## 📊 Usage
-
-### A) Run Everything
-
-`run_all.sh` orchestrates the full workflow:
+Make `run_all.sh` executable and execute it to run the complete pipeline end‑to‑end:
 
 ```bash
 chmod +x run_all.sh
 ./run_all.sh
+```
 
-This script will:
+This sequence will:
 
-- Generate 1 000 000 normal‑distribution samples (data/normal_data.txt).
+1. **Generate data** (`1_000_000` samples) into `data/normal_data.txt`.
+2. **Compute exact quantiles** (1%, 5%, 50%, 95%, 99%).
+3. **Stream ingestion** via multithreaded t‑Digest, reporting final centroids and quantiles.
+4. **Benchmark single‑threaded ingestion** for various compression factors.
 
-- Compute exact quantiles (1%, 5%, 50%, 95%, 99%).
+### Individual Steps
 
-- Stream those samples through the multithreaded t‑Digest, reporting final centroids + key quantiles.
+* **Generate Data**:
 
-- Benchmark single‑threaded ingestion for δ = {50, 100, 200, 500}.
+  ```bash
+  ./build/data_generator
+  ```
 
-## B) Individual Steps
+* **Ground‑Truth Quantiles**:
 
-1. **Generate Data**  
-   ```bash
-   ./build/data_generator
-2. **Ground‑Truth Quantiles**
-   ```bash
-    ./build/ground_truth data/normal_data.txt
-3. **Streaming T-Digest**
-    ```bash
-    ./build/tdigest_main data/normal_data.txt 500 1000 5000 4
-4. **Benchmark Ingestion**
-    ```bash
-    Benchmark Ingestion
+  ```bash
+  ./build/ground_truth data/normal_data.txt
+  ```
 
-# 🔧 **Tuning Parameters**
-- δ (compression): larger δ → more centroids → higher accuracy.
+* **Streaming t‑Digest**:
 
-- merge_threshold: how many raw centroids before calling merge() (≈ 2 × δ).
+  ```bash
+  ./build/tdigest_main data/normal_data.txt 500 1000 5000 4
+  ```
 
-- batch_size: number of points to buffer before flushing to digest (1 000–5 000).
+* **Benchmark Ingestion**:
 
-- threads: number of ingest threads (match to your CPU core count).
+  ```bash
+  ./build/benchmark
+  ```
+
+## Benchmark Results
+
+**1) Data Generation**
+
+```
+Generated data/normal_data.txt (10000000 samples)
+```
+
+**2) Ground‑Truth Quantiles**
+
+```
+Q0.01: 65.0716
+Q0.05: 75.3137
+Q0.5:  99.9821
+Q0.95:124.668
+Q0.99:134.927
+```
+
+**3) Streaming t‑Digest**
+
+```
+--- Streaming t‑Digest Results ---
+Final centroids: 635
+Q0.01: 65.0685
+Q0.05: 75.3086
+Q0.5:  99.9813
+Q0.95:124.67
+Q0.99:134.91
+
+--- Query Benchmark ---
+Queries: 10000000  Rate: 1.90964e+06 q/s  Avg Latency: 0.52366 µs
+
+--- Accuracy Statistics ---
+Mean Relative Error:    0.0127561 %
+95th‑Percentile Error:  0.00932085 %
+99th‑Percentile Error:  0.0926393 %
+
+--- Space Complexity ---
+Centroids: 635
+Memory footprint: 9.92188 KB (635 × 16 bytes)
+```
+
+**4) Single‑Thread Benchmark**
+
+```
+c=50   rate=8.4475e+06 pts/s  centroids=82
+c=100  rate=7.45068e+06 pts/s centroids=134
+c=200  rate=7.14381e+06 pts/s centroids=388
+c=500  rate=6.43611e+06 pts/s centroids=696
+```
+
+## Tuning Parameters
+
+* **δ (compression)**: Controls max centroids. Higher δ → more centroids → higher accuracy.
+* **merge\_threshold**: Flush threshold for raw centroids (≈ 2 × δ).
+* **batch\_size**: Number of points buffered before merging (1 000–5 000).
+* **threads**: Number of ingestion threads (ideally match CPU cores).
+
